@@ -4,8 +4,6 @@ WORKDIR /app
 # Install git + SSH client
 RUN apt-get update && apt-get install -y git openssh-client && rm -rf /var/lib/apt/lists/*
 
-# Trust the git server host key
-RUN mkdir -p -m 700 /root/.ssh && ssh-keyscan -p 222 192.168.4.78 >> /root/.ssh/known_hosts
 RUN git clone --depth=1 https://github.com/tdmdevteam/onlymatch-reactapp.git repo
 # Build frontend
 WORKDIR /app/repo
