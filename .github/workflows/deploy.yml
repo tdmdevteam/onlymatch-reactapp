@@ -41,8 +41,9 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            set -euo pipefail
+            set -eo pipefail
             source /etc/profile || true
+            set -u
             export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/sbin:/share/CACHEDEV1_DATA/.qpkg/container-station/bin:/share/Container/container-station/bin"
 
             DOCKER_BIN="$(command -v docker || true)"
