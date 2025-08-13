@@ -3,11 +3,9 @@ on:
   push:
     branches:
       - main
-
 permissions:
   contents: read
   packages: write
-
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
 
@@ -16,21 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -44,14 +38,13 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             docker login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
-            mkdir -p /opt/web
-            if [ -f /opt/web/docker-compose.yml ]; then
+            mkdir -p /share/Dev-Containers/dan-react/opt/web
+            if [ -f /share/Dev-Containers/dan-react/opt/web/docker-compose.yml ]; then
               cd /opt/web
               docker compose pull
               docker compose up -d
             else
               docker pull ${{ env.IMAGE }}
               docker rm -f web || true
-              docker run -d --name web -p 8080:80 ${{ env.IMAGE }}
+              docker run -d --name web -p 9080:80 ${{ env.IMAGE }}
             fi
-
