@@ -1,11 +1,7 @@
-name: Build and Deploy
-on:
-  push:
-    branches:
-      - main
 permissions:
   contents: read
   packages: write
+
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
 
@@ -25,6 +21,7 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -37,14 +34,36 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            docker login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
-            mkdir -p /share/Dev-Containers/dan-react/opt/web
-            if [ -f /share/Dev-Containers/dan-react/opt/web/docker-compose.yml ]; then
-              cd /opt/web
-              docker compose pull
-              docker compose up -d
-            else
-              docker pull ${{ env.IMAGE }}
-              docker rm -f web || true
-              docker run -d --name web -p 9080:80 ${{ env.IMAGE }}
+            set -euo pipefail
+            source /etc/profile || true
+            export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/sbin:/share/CACHEDEV1_DATA/.qpkg/container-station/bin:/share/Container/container-station/bin"
+
+            DOCKER_BIN="$(command -v docker || true)"
+            if [ -z "$DOCKER_BIN" ]; then
+              echo "docker not found on remote host"
+              exit 1
             fi
+
+            "$DOCKER_BIN" login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
+
+            DEPLOY_DIR=/opt/web
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+
+            if [ -f docker-compose.yml ]; then
+              if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+                "$DOCKER_BIN" compose pull
+                "$DOCKER_BIN" compose up -d
+              elif command -v docker-compose >/dev/null 2>&1; then
+                docker-compose pull
+                docker-compose up -d
+              else
+                echo "docker compose not installed"
+                exit 1
+              fi
+            else
+              "$DOCKER_BIN" pull ${{ env.IMAGE }}
+              "$DOCKER_BIN" rm -f web || true
+              "$DOCKER_BIN" run -d --name web -p 9080:80 ${{ env.IMAGE }}
+            fi
+
