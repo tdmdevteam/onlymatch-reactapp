@@ -54,7 +54,7 @@ jobs:
 
             "$DOCKER_BIN" login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
 
-            DEPLOY_DIR=/opt/web
+            DEPLOY_DIR=/share/Dev-Containers/dan-react/opt/web
             mkdir -p "$DEPLOY_DIR"
             cd "$DEPLOY_DIR"
 
