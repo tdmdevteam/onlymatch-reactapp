@@ -1,23 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../api.js';
-import ProfileCard from '../components/ProfileCard.jsx';
 
 export default function Admin() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const nav = useNavigate();
+
+    const [authed, setAuthed] = useState(false);
+    const [checking, setChecking] = useState(true);
+    const [status, setStatus] = useState('');
+
+    // login fields
+    const [email, setEmail] = useState('dan@onlymatch.com');
+    const [password, setPassword] = useState('1');
+
+    // create profile fields
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
     const [file, setFile] = useState(null);
-    const [status, setStatus] = useState('');
-    const [created, setCreated] = useState(null);
+
+    useEffect(() => {
+        let alive = true;
+        API.me()
+            .then(() => { if (alive) setAuthed(true); })
+            .catch(() => { if (alive) setAuthed(false); })
+            .finally(() => { if (alive) setChecking(false); });
+        return () => { alive = false; };
+    }, []);
 
     async function handleLogin(e) {
         e.preventDefault();
+        setStatus('Logging in…');
         try {
             await API.login(email, password);
+            setAuthed(true);
             setStatus('Logged in ✔');
+        } catch (err) {
+            setStatus(err.message || 'Login failed');
+        }
+    }
+
+    async function handleLogout() {
+        setStatus('Logging out…');
+        try {
+            await API.logout();
+            setAuthed(false);
+            setStatus('Logged out');
         } catch (e) {
-            setStatus(e.message);
+            setStatus(e.message || 'Logout failed');
         }
     }
 
@@ -25,61 +54,49 @@ export default function Admin() {
         e.preventDefault();
         setStatus('Uploading…');
         try {
-            const p = await API.createProfile({ name, bio, file });
-            setCreated(p);
-            setStatus(`Created profile #${p.id}`);
+            await API.createProfile({ name, bio, file });
+            setStatus('Created ✔');
             setName(''); setBio(''); setFile(null);
-        } catch (e) {
-            setStatus(e.message);
+            nav('/'); // go see it on Home
+        } catch (err) {
+            setStatus(err.message || 'Upload failed');
         }
     }
 
+    if (checking) return <p style={{ padding: 16 }}>Checking session…</p>;
+
     return (
-        <div className="admin">
+        <div className="admin" style={{ padding: 16 }}>
             <h1>Admin</h1>
 
-            <form className="form" onSubmit={handleLogin}>
-                <h2>Login</h2>
-                <input
-                    placeholder="Email"
-                    value={email} onChange={(e) => setEmail(e.target.value)}
-                    type="email" required
-                />
-                <input
-                    placeholder="Password"
-                    value={password} onChange={(e) => setPassword(e.target.value)}
-                    type="password" required
-                />
-                <button className="btn">Login</button>
-            </form>
-
-            <form className="form" onSubmit={handleCreate}>
-                <h2>Create Profile</h2>
-                <input
-                    placeholder="Name"
-                    value={name} onChange={(e) => setName(e.target.value)}
-                    required
-                />
-                <textarea
-                    placeholder="Bio"
-                    value={bio} onChange={(e) => setBio(e.target.value)}
-                    rows={4}
-                />
-                <input
-                    type="file" accept="image/*"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
-                <button className="btn">Create</button>
-            </form>
-
-            {status && <p className="status">{status}</p>}
-
-            {created && (
+            {!authed ? (
+                <form className="form" onSubmit={handleLogin}>
+                    <h2>Login</h2>
+                    <input type="email" placeholder="Email"
+                        value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <input type="password" placeholder="Password"
+                        value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <button className="btn">Login</button>
+                </form>
+            ) : (
                 <>
-                    <h3>Preview</h3>
-                    <ProfileCard profile={created} />
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <strong>Authenticated</strong>
+                        <button className="btn" onClick={handleLogout}>Logout</button>
+                    </div>
+
+                    <form className="form" onSubmit={handleCreate} style={{ marginTop: 16 }}>
+                        <h2>Create Profile</h2>
+                        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+                        <textarea placeholder="Bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
+                        <input type="file" accept="image/*"
+                            onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                        <button className="btn">Create</button>
+                    </form>
                 </>
             )}
+
+            {status && <p className="status">{status}</p>}
         </div>
     );
 }

@@ -2,14 +2,11 @@
     "name": "my-react-app-root",
     "private": true,
     "scripts": {
-        "dev": "concurrently \"npm run dev --prefix frontend\" \"php -S localhost:8000 -t backend/public\"",
+        "dev": "concurrently \"npm run dev --prefix frontend\" \"php -S localhost:8000 -t backend/public backend/public/index.php\"",
         "dev:frontend": "npm run dev --prefix frontend",
-        "dev:backend": "php -S localhost:8000 -t backend/public"
+        "dev:backend": "php -S localhost:8000 -t backend/public backend/public/index.php"
     },
     "devDependencies": {
         "concurrently": "^8.2.2"
-    },
-    "dependencies": {
-        "react-router-dom": "^7.8.0"
     }
 }

@@ -1,14 +1,12 @@
 <?php
 declare(strict_types=1);
-
 require __DIR__ . '/bootstrap.php';
 
-// CHANGE THESE for your real admin:
-$email = 'admin@example.com';
-$password = 'changeme123';
+$email = strtolower(trim($argv[1] ?? 'dan@onlymatch.com'));
+$pass  = $argv[2] ?? '1';
 
-$hash = password_hash($password, PASSWORD_DEFAULT);
-$stmt = $db->prepare('INSERT OR IGNORE INTO admins (email, password_hash) VALUES (?, ?)');
-$stmt->execute([$email, $hash]);
+$hash = password_hash($pass, PASSWORD_DEFAULT);
+$st = $db->prepare('INSERT OR REPLACE INTO admins (id,email,password_hash) VALUES (1,?,?)');
+$st->execute([$email, $hash]);
 
-echo "Admin seeded: {$email} / {$password}\n";
+echo "Seeded admin:\n  email: {$email}\n  password: {$pass}\n";
