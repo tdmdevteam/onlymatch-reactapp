@@ -34,8 +34,8 @@ RUN if [ -f /var/www/html/backend/bootstrap-production.php ]; then \
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist /var/www/html/frontend
 
-# Copy nginx configuration for production
-COPY nginx.prod.conf /etc/nginx/nginx.conf
+# Copy nginx configuration for production (Alpine nginx loads from http.d)
+COPY nginx.prod.conf /etc/nginx/http.d/default.conf
 
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisord.conf
