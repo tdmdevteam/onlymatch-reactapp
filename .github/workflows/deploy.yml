@@ -11,6 +11,7 @@ permissions:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
+  DEPLOY_DIR: /share/Dev-Containers/dan-react/opt/web
 
 jobs:
   build-and-push:
@@ -39,6 +40,35 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure remote deploy directory exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            mkdir -p "${{ env.DEPLOY_DIR }}"
+
+      - name: Copy docker-compose and app sources needed for build context
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: |
+            docker-compose.yml
+            Dockerfile.backend
+            Dockerfile.frontend
+            nginx.conf
+            backend/**
+            frontend/**
+          target: ${{ env.DEPLOY_DIR }}
+
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -58,41 +88,15 @@ jobs:
               exit 1
             fi
 
-            "$DOCKER_BIN" login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
-
-            DEPLOY_DIR=/share/Dev-Containers/dan-react/opt/web
-            mkdir -p "$DEPLOY_DIR"
+            DEPLOY_DIR=${{ env.DEPLOY_DIR }}
             cd "$DEPLOY_DIR"
 
-            # Create data directories for persistent storage
-            mkdir -p data/uploads
-            
-            # Create docker-compose.yml if it doesn't exist
-            cat > docker-compose.yml << 'EOF'
-            version: '3.8'
-            services:
-              web:
-                image: ${{ env.IMAGE }}
-                ports:
-                  - "9080:80"
-                volumes:
-                  - ./data/uploads:/var/www/html/backend/public/uploads
-                  - ./data/db.sqlite:/var/www/html/backend/db.sqlite
-                environment:
-                  - PHP_MEMORY_LIMIT=256M
-                  - PHP_MAX_UPLOAD_SIZE=10M
-                  - PHP_MAX_POST_SIZE=10M
-                restart: unless-stopped
-            EOF
-
             if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
-              "$DOCKER_BIN" compose pull
-              "$DOCKER_BIN" compose down || true
-              "$DOCKER_BIN" compose up -d
+              "$DOCKER_BIN" compose down --remove-orphans || true
+              "$DOCKER_BIN" compose up -d --build --remove-orphans
             elif command -v docker-compose >/dev/null 2>&1; then
-              docker-compose pull
-              docker-compose down || true
-              docker-compose up -d
+              docker-compose down --remove-orphans || true
+              docker-compose up -d --build --remove-orphans
             else
               echo "docker compose not installed"
               exit 1
