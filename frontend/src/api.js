@@ -25,11 +25,13 @@ const API = {
             credentials: 'include',
         }).then(ok);
     },
-    createProfile({ name, bio, file }) {
+    createProfile({ name, bio, file, onlyfans_url }) {
         const fd = new FormData();
         fd.append('name', name);
         fd.append('bio', bio);
+        if (onlyfans_url) fd.append('onlyfans_url', onlyfans_url);
         if (file) fd.append('avatar', file);
+
         return fetch('/api/profiles', {
             method: 'POST',
             body: fd,

@@ -8,7 +8,7 @@ export default function App() {
           <NavLink to="/" className="brand">OnlyMatch</NavLink>
           <div className="spacer" />
           <NavLink to="/" end>Home</NavLink>
-          <NavLink to="/admin">Admin</NavLink>
+          <NavLink to="/admin">Log In</NavLink>
         </nav>
       </header>
 

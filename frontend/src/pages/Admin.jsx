@@ -17,6 +17,7 @@ export default function Admin() {
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
     const [file, setFile] = useState(null);
+    const [onlyfans, setOnlyfans] = useState('');
 
     useEffect(() => {
         let alive = true;
@@ -54,7 +55,7 @@ export default function Admin() {
         e.preventDefault();
         setStatus('Uploading…');
         try {
-            await API.createProfile({ name, bio, file });
+            await API.createProfile({ name, bio, file, onlyfans_url: onlyfans });
             setStatus('Created ✔');
             setName(''); setBio(''); setFile(null);
             nav('/'); // go see it on Home
@@ -88,6 +89,7 @@ export default function Admin() {
                     <form className="form" onSubmit={handleCreate} style={{ marginTop: 16 }}>
                         <h2>Create Profile</h2>
                         <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+                        <input placeholder="OnlyFans URL (e.g. onlyfans.com/username)" value={onlyfans} onChange={(e) => setOnlyfans(e.target.value)} />
                         <textarea placeholder="Bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
                         <input type="file" accept="image/*"
                             onChange={(e) => setFile(e.target.files?.[0] || null)} />

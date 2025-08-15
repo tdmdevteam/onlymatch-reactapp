@@ -40,6 +40,15 @@ if (is_readable($schemaPath)) {
   $db->exec(file_get_contents($schemaPath));
 }
 
+// --- simple migration: add onlyfans_url if missing ---
+$cols = $db->query("PRAGMA table_info(profiles)")->fetchAll(PDO::FETCH_ASSOC);
+$hasOnlyfans = false;
+foreach ($cols as $c) { if (($c['name'] ?? '') === 'onlyfans_url') { $hasOnlyfans = true; break; } }
+if (!$hasOnlyfans) {
+  $db->exec("ALTER TABLE profiles ADD COLUMN onlyfans_url TEXT");
+}
+
+
 function json($data, int $code = 200): void {
   http_response_code($code);
   echo json_encode($data);
