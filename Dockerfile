@@ -1,21 +1,53 @@
-FROM node:20 AS builder
+# Stage 1: Build frontend
+FROM node:20 AS frontend-builder
 WORKDIR /app
 
-# Install git + SSH client
-RUN apt-get update && apt-get install -y git openssh-client && rm -rf /var/lib/apt/lists/*
-
-RUN git clone --depth=1 https://github.com/tdmdevteam/onlymatch-reactapp.git repo
-# Build frontend
-WORKDIR /app/repo/frontend
-RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
+# Copy frontend files
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm ci --legacy-peer-deps
+COPY frontend/ ./
 RUN npm run build
 
-# Normalize build output
-RUN if [ -d dist ]; then mv dist /app/static; \
-    elif [ -d build ]; then mv build /app/static; \
-    else echo "No dist/build directory found" && ls -la && exit 1; fi
+# Stage 2: Setup PHP backend and nginx
+FROM php:8.2-fpm-alpine
 
+# Install nginx and required PHP extensions
+RUN apk add --no-cache nginx supervisor && \
+    docker-php-ext-install pdo pdo_mysql && \
+    # Install PDO SQLite support
+    apk add --no-cache sqlite-dev && \
+    docker-php-ext-install pdo_sqlite
 
-FROM nginx:alpine
-COPY --from=builder /app/static /usr/share/nginx/html
+# Create necessary directories
+RUN mkdir -p /var/www/html/backend/public/uploads && \
+    mkdir -p /var/www/html/frontend && \
+    mkdir -p /run/nginx && \
+    mkdir -p /var/log/supervisor
+
+# Copy backend files
+COPY backend/ /var/www/html/backend/
+# Use production bootstrap in container
+RUN if [ -f /var/www/html/backend/bootstrap-production.php ]; then \
+        mv /var/www/html/backend/bootstrap-production.php /var/www/html/backend/bootstrap.php; \
+    fi && \
+    chown -R www-data:www-data /var/www/html/backend && \
+    chmod -R 755 /var/www/html/backend/public/uploads
+
+# Copy frontend build
+COPY --from=frontend-builder /app/frontend/dist /var/www/html/frontend
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy supervisor configuration
+COPY supervisord.conf /etc/supervisord.conf
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
