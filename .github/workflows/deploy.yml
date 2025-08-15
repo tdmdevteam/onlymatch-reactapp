@@ -95,7 +95,11 @@ jobs:
               # Stop any container already using port 9080
               in_use_id=$($DOCKER_BIN ps -q --filter "publish=9080"); \
               if [ -n "$in_use_id" ]; then $DOCKER_BIN stop "$in_use_id" || true; fi
+              # Ensure host bind targets exist with correct types
               mkdir -p data/uploads
+              mkdir -p data
+              if [ -d data/db.sqlite ]; then rm -rf data/db.sqlite; fi
+              touch data/db.sqlite
               # Pull latest image for the tag used
               IMAGE="$IMAGE" "$DOCKER_BIN" compose -f docker-compose.prod.yml pull
               "$DOCKER_BIN" compose -f docker-compose.prod.yml down --remove-orphans || true
@@ -104,7 +108,11 @@ jobs:
               # Stop any container already using port 9080
               in_use_id=$(docker ps -q --filter "publish=9080"); \
               if [ -n "$in_use_id" ]; then docker stop "$in_use_id" || true; fi
+              # Ensure host bind targets exist with correct types
               mkdir -p data/uploads
+              mkdir -p data
+              if [ -d data/db.sqlite ]; then rm -rf data/db.sqlite; fi
+              touch data/db.sqlite
               IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml pull
               IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml down --remove-orphans || true
               IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml up -d --remove-orphans
