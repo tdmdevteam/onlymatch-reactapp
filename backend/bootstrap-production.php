@@ -15,6 +15,7 @@ if (!$isCli) {
   $allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:9080',
+    'http://192.168.4.78:9080'
     'http://localhost'
   ];
   
