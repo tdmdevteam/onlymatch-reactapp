@@ -86,7 +86,7 @@ if ($path === '/api/profiles' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Image upload (optional)
     $avatarUrl = null;
     if (!empty($_FILES['avatar']['tmp_name'])) {
-      $uploads = __DIR__ . '/uploads';
+    $uploads = __DIR__ . '/uploads';
       if (!is_dir($uploads)) mkdir($uploads, 0777, true);
       $ext = strtolower(pathinfo($_FILES['avatar']['name'] ?? '', PATHINFO_EXTENSION) ?: 'jpg');
       $fname = uniqid('avatar_', true) . '.' . $ext;

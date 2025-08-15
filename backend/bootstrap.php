@@ -9,7 +9,14 @@ $isCli = (PHP_SAPI === 'cli');
 // Only send headers / handle CORS / sessions for web requests
 if (!$isCli) {
   header('Content-Type: application/json');
-  header('Access-Control-Allow-Origin: http://localhost:5173');
+  // In dev we might run behind nginx (same-origin) or Vite (5173).
+  // Mirror Origin when present so credentials work; fallback to Vite origin.
+  $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+  if ($origin !== '') {
+    header('Access-Control-Allow-Origin: ' . $origin);
+  } else {
+    header('Access-Control-Allow-Origin: http://localhost:5173');
+  }
   header('Access-Control-Allow-Credentials: true');
   header('Access-Control-Allow-Headers: Content-Type, Authorization');
   header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');

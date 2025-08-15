@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y git openssh-client && rm -rf /var/lib/a
 
 RUN git clone --depth=1 https://github.com/tdmdevteam/onlymatch-reactapp.git repo
 # Build frontend
-WORKDIR /app/repo
+WORKDIR /app/repo/frontend
 RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 RUN npm run build
 
