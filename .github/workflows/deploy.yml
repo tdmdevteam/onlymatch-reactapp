@@ -60,13 +60,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: |
-            docker-compose.yml
-            Dockerfile.backend
-            Dockerfile.frontend
-            nginx.conf
-            backend/**
-            frontend/**
+          source: "docker-compose.yml,Dockerfile.backend,Dockerfile.frontend,nginx.conf,backend/**,frontend/**"
           target: ${{ env.DEPLOY_DIR }}
 
       - name: SSH deploy
