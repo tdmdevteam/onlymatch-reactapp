@@ -87,9 +87,15 @@ jobs:
             export IMAGE=${{ env.IMAGE }}
 
             if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+              # Stop any container already using port 9080
+              in_use_id=$($DOCKER_BIN ps -q --filter "publish=9080"); \
+              if [ -n "$in_use_id" ]; then $DOCKER_BIN stop "$in_use_id" || true; fi
               "$DOCKER_BIN" compose -f docker-compose.prod.yml down --remove-orphans || true
               "$DOCKER_BIN" compose -f docker-compose.prod.yml up -d --remove-orphans
             elif command -v docker-compose >/dev/null 2>&1; then
+              # Stop any container already using port 9080
+              in_use_id=$(docker ps -q --filter "publish=9080"); \
+              if [ -n "$in_use_id" ]; then docker stop "$in_use_id" || true; fi
               IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml down --remove-orphans || true
               IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml up -d --remove-orphans
             else
