@@ -1,9 +1,11 @@
 # PHP backend with SQLite
 FROM php:8.2-alpine
 
-# Install build dependencies for SQLite and enable extensions
-RUN apk add --no-cache sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite
+# Install build toolchain and SQLite headers, build extensions, then cleanup
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS sqlite-dev; \
+    docker-php-ext-install -j"$(nproc)" pdo pdo_sqlite; \
+    apk del .build-deps
 
 WORKDIR /var/www/html/backend
 
