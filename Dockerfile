@@ -13,11 +13,8 @@ RUN npm run build
 FROM php:8.2-fpm-alpine
 
 # Install nginx and required PHP extensions
-RUN apk add --no-cache nginx supervisor && \
-    docker-php-ext-install pdo pdo_mysql && \
-    # Install PDO SQLite support
-    apk add --no-cache sqlite-dev && \
-    docker-php-ext-install pdo_sqlite
+RUN apk add --no-cache nginx supervisor sqlite-dev && \
+    docker-php-ext-install pdo pdo_mysql pdo_sqlite
 
 # Create necessary directories
 RUN mkdir -p /var/www/html/backend/public/uploads && \
@@ -37,8 +34,8 @@ RUN if [ -f /var/www/html/backend/bootstrap-production.php ]; then \
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist /var/www/html/frontend
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy nginx configuration for production
+COPY nginx.prod.conf /etc/nginx/nginx.conf
 
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisord.conf
