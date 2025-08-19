@@ -138,6 +138,7 @@ if ($path === '/api/profiles' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $s = fetchOnlyFansSummary($input);
 
+<<<<<<< HEAD
     $username        = $s['username']        ?? $slug;
     $avatar_url      = $s['avatar_url']      ?? null;
     $display_name    = $s['display_name']    ?? null;
@@ -145,6 +146,20 @@ if ($path === '/api/profiles' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $subscribe_price = $s['subscribe_price'] ?? null;
     $photos_count    = $s['photos_count']    ?? 0;
     $videos_count    = $s['videos_count']    ?? 0;
+=======
+    // Image upload (optional)
+    $avatarUrl = null;
+    if (!empty($_FILES['avatar']['tmp_name'])) {
+    $uploads = __DIR__ . '/uploads';
+      if (!is_dir($uploads)) mkdir($uploads, 0777, true);
+      $ext = strtolower(pathinfo($_FILES['avatar']['name'] ?? '', PATHINFO_EXTENSION) ?: 'jpg');
+      $fname = uniqid('avatar_', true) . '.' . $ext;
+      if (!move_uploaded_file($_FILES['avatar']['tmp_name'], $uploads . '/' . $fname)) {
+        json(['error'=>'upload failed'], 500);
+      }
+      $avatarUrl = '/uploads/' . $fname;
+    }
+>>>>>>> 9fa2085257edffbec3262d52376897fa1bddd0a3
 
     $profile_name = $name !== '' ? $name : ($display_name ?: $username);
     $onlyfans_url = 'https://onlyfans.com/' . $username;

@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# Build artifacts
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+.dockerignore
+docker-compose.yml
+Dockerfile
+
+# CI/CD
+.github/
+
+# Documentation
+README.md
+*.md
+
+# Local data
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

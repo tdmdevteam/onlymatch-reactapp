@@ -11,28 +11,58 @@ permissions:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
+  DEPLOY_DIR: /share/Dev-Containers/dan-react/opt/web
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: docker/setup-buildx-action@v3
+      
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure remote deploy directory exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            mkdir -p "${{ env.DEPLOY_DIR }}"
+
+      - name: Copy production compose file
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: ${{ env.DEPLOY_DIR }}
+
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -52,26 +82,42 @@ jobs:
               exit 1
             fi
 
-            "$DOCKER_BIN" login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_PAT }}
-
-            DEPLOY_DIR=/share/Dev-Containers/dan-react/opt/web
-            mkdir -p "$DEPLOY_DIR"
+            DEPLOY_DIR=${{ env.DEPLOY_DIR }}
             cd "$DEPLOY_DIR"
+            export IMAGE=${{ env.IMAGE }}
 
-            if [ -f docker-compose.yml ]; then
-              if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
-                "$DOCKER_BIN" compose pull
-                "$DOCKER_BIN" compose up -d
-              elif command -v docker-compose >/dev/null 2>&1; then
-                docker-compose pull
-                docker-compose up -d
-              else
-                echo "docker compose not installed"
-                exit 1
-              fi
+            # Authenticate to GHCR to pull the latest image
+            if [ -n "${{ secrets.GHCR_USER }}" ] && [ -n "${{ secrets.GHCR_PAT }}" ]; then
+              "$DOCKER_BIN" login ghcr.io -u "${{ secrets.GHCR_USER }}" -p "${{ secrets.GHCR_PAT }}"
+            fi
+
+            if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+              # Stop any container already using port 9080
+              in_use_id=$($DOCKER_BIN ps -q --filter "publish=9080"); \
+              if [ -n "$in_use_id" ]; then $DOCKER_BIN stop "$in_use_id" || true; fi
+              # Ensure host bind targets exist with correct types
+              mkdir -p data/uploads
+              mkdir -p data
+              if [ -d data/db.sqlite ]; then rm -rf data/db.sqlite; fi
+              touch data/db.sqlite
+              # Pull latest image for the tag used
+              IMAGE="$IMAGE" "$DOCKER_BIN" compose -f docker-compose.prod.yml pull
+              "$DOCKER_BIN" compose -f docker-compose.prod.yml down --remove-orphans || true
+              "$DOCKER_BIN" compose -f docker-compose.prod.yml up -d --remove-orphans
+            elif command -v docker-compose >/dev/null 2>&1; then
+              # Stop any container already using port 9080
+              in_use_id=$(docker ps -q --filter "publish=9080"); \
+              if [ -n "$in_use_id" ]; then docker stop "$in_use_id" || true; fi
+              # Ensure host bind targets exist with correct types
+              mkdir -p data/uploads
+              mkdir -p data
+              if [ -d data/db.sqlite ]; then rm -rf data/db.sqlite; fi
+              touch data/db.sqlite
+              IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml pull
+              IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+              IMAGE="$IMAGE" docker-compose -f docker-compose.prod.yml up -d --remove-orphans
             else
-              "$DOCKER_BIN" pull ${{ env.IMAGE }}
-              "$DOCKER_BIN" rm -f web || true
-              "$DOCKER_BIN" run -d --name web -p 9080:80 ${{ env.IMAGE }}
+              echo "docker compose not installed"
+              exit 1
             fi
 

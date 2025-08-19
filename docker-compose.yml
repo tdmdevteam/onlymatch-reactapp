@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: onlymatch-backend
+    volumes:
+      - backend_data:/var/www/html/backend
+      - uploads:/var/www/html/backend/public/uploads
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: onlymatch-frontend
+    depends_on:
+      - backend
+    ports:
+      - "9080:80"
+    volumes:
+      - uploads:/uploads:ro
+
+volumes:
+  backend_data:
+  uploads:

@@ -1,0 +1,28 @@
+# PHP backend with SQLite
+FROM php:8.2-alpine
+
+# Install build toolchain and SQLite headers, build extensions, then cleanup
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS sqlite-dev; \
+    docker-php-ext-install -j"$(nproc)" pdo pdo_sqlite; \
+    apk del .build-deps
+
+WORKDIR /var/www/html/backend
+
+# Copy backend source
+COPY backend /var/www/html/backend
+
+# Create public dir as Nginx/PHP-FPM docroot helper
+RUN mkdir -p /var/www/html/backend/public /var/www/html/backend/uploads
+
+# Ensure SQLite database file exists and is writable
+RUN touch /var/www/html/backend/db.sqlite && \
+    chown -R www-data:www-data /var/www/html/backend && \
+    chmod -R 775 /var/www/html/backend
+
+# Expose backend port and run PHP built-in server
+EXPOSE 8000
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/index.php"]
+
+# Use PHP's built-in server only for local dev; in compose we'll run php-fpm
+# Expose not needed for php-fpm container; Nginx will connect via socket/port

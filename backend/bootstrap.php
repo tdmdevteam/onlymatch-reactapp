@@ -22,25 +22,7 @@ $isCli = (PHP_SAPI === 'cli');
 
 // Only send headers / handle CORS / sessions for web requests
 if (!$isCli) {
-  header('Content-Type: application/json');
-  header('Access-Control-Allow-Origin: http://localhost:5173');
-  header('Access-Control-Allow-Credentials: true');
-  header('Access-Control-Allow-Headers: Content-Type, Authorization');
-  header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-
-  if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-  }
-
-  session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'httponly' => true,
-    'samesite' => 'Lax',
-  ]);
-  session_name('OMSESSID');
-  if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+  require __DIR__ . '/http_bootstrap.php';
 }
 
 // ---- SQLite setup ----

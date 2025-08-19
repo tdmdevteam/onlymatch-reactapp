@@ -1,0 +1,9 @@
+services:
+  web:
+    image: ${IMAGE}
+    ports:
+      - "9080:80"
+    volumes:
+      - ./data/uploads:/var/www/html/backend/public/uploads
+      - ./data/db.sqlite:/var/www/html/backend/db.sqlite
+    restart: unless-stopped
