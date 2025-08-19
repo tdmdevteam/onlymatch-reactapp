@@ -8,14 +8,9 @@ export default function Admin() {
     const [authed, setAuthed] = useState(false);
     const [checking, setChecking] = useState(true);
     const [status, setStatus] = useState('');
-
-    // login fields
     const [email, setEmail] = useState('dan@onlymatch.com');
     const [password, setPassword] = useState('1');
-
-    // create profile fields
     const [name, setName] = useState('');
-    const [bio, setBio] = useState('');
     const [file, setFile] = useState(null);
     const [onlyfans, setOnlyfans] = useState('');
 
@@ -55,9 +50,9 @@ export default function Admin() {
         e.preventDefault();
         setStatus('Uploading…');
         try {
-            await API.createProfile({ name, bio, file, onlyfans_url: onlyfans });
+            await API.createProfile({ name, file, onlyfans_url: onlyfans });
             setStatus('Created ✔');
-            setName(''); setBio(''); setFile(null);
+            setName(''); setFile(null);
             nav('/'); // go see it on Home
         } catch (err) {
             setStatus(err.message || 'Upload failed');
@@ -90,7 +85,6 @@ export default function Admin() {
                         <h2>Create Profile</h2>
                         <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
                         <input placeholder="OnlyFans URL (e.g. onlyfans.com/username)" value={onlyfans} onChange={(e) => setOnlyfans(e.target.value)} />
-                        <textarea placeholder="Bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
                         <input type="file" accept="image/*"
                             onChange={(e) => setFile(e.target.files?.[0] || null)} />
                         <button className="btn">Create</button>

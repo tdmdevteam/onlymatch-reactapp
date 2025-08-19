@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS profiles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  bio TEXT,
   avatar_url TEXT,
   onlyfans_url TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP

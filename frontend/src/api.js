@@ -1,8 +1,21 @@
+// api.js
 const ok = async (res) => {
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+    const ct = res.headers.get('content-type') || '';
+    let data = null;
+
+    if (res.status === 204) {
+        data = { ok: true };
+    } else if (ct.includes('application/json')) {
+        data = await res.json();
+    } else {
+        const text = await res.text().catch(() => '');
+        data = text ? { message: text } : {};
+    }
+
+    if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    return data ?? { ok: true };
 };
+
 
 const API = {
     listProfiles() {
@@ -25,10 +38,9 @@ const API = {
             credentials: 'include',
         }).then(ok);
     },
-    createProfile({ name, bio, file, onlyfans_url }) {
+    createProfile({ name, file, onlyfans_url }) {
         const fd = new FormData();
         fd.append('name', name);
-        fd.append('bio', bio);
         if (onlyfans_url) fd.append('onlyfans_url', onlyfans_url);
         if (file) fd.append('avatar', file);
 
@@ -36,6 +48,13 @@ const API = {
             method: 'POST',
             body: fd,
             credentials: 'include',
+        }).then(ok);
+    },
+
+    deleteProfile(id) {
+        return fetch(`api/profiles/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
         }).then(ok);
     },
 };
